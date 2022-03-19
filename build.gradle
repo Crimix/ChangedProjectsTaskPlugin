@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'java-gradle-plugin'
     id "io.freefair.lombok" version "6.4.1"
+    id 'net.saliman.properties' version '1.5.2'
 
     // Publishing publicly
     id 'com.gradle.plugin-publish' version '0.9.10'
