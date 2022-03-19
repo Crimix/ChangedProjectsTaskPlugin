@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'java-gradle-plugin'
+    id "io.freefair.lombok" version "6.4.1"
+
+    // Publishing publicly
+    id 'com.gradle.plugin-publish' version '0.9.10'
+
+    // Publishing to Artifactory
+    id 'maven-publish'
+}
+
+group 'io.github.crimix'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.12'
+}
+
+gradlePlugin {
+    plugins {
+        changedModulesPlugin {
+            id = 'io.github.crimix.changed-projects-task'
+            implementationClass = 'io.github.crimix.changedprojectstask.ChangedProjectsPlugin'
+        }
+    }
+}
+
+publishToMavenLocal.dependsOn(validatePlugins)
