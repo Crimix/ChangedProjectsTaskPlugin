@@ -5,7 +5,7 @@ plugins {
     id 'net.saliman.properties' version '1.5.2'
 
     // Publishing publicly
-    id 'com.gradle.plugin-publish' version '0.9.10'
+    id "com.gradle.plugin-publish" version "0.20.0"
 
     // Publishing to Artifactory
     id 'maven-publish'
@@ -19,16 +19,31 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 gradlePlugin {
     plugins {
-        changedModulesPlugin {
+        changedProjectsPlugin {
             id = 'io.github.crimix.changed-projects-task'
             implementationClass = 'io.github.crimix.changedprojectstask.ChangedProjectsPlugin'
         }
     }
 }
 
+pluginBundle {
+    website = 'https://github.com/Crimix/ChangedProjectsTaskPlugin'
+    vcsUrl = 'https://github.com/Crimix/ChangedProjectsTaskPlugin'
+
+    plugins {
+        changedProjectsPlugin {
+            // id is captured from java-gradle-plugin configuration
+            displayName = 'Changed Projects Task Plugin'
+            description = 'A Gradle plugin to run a user defined task on changed projects (modules) and their dependent projects (modules)'
+            tags = ['git', 'project dependencies', 'task', 'changed projects', 'changed modules']
+        }
+    }
+}
+
 publishToMavenLocal.dependsOn(validatePlugins)
+publishPlugins.dependsOn(validatePlugins)
