@@ -69,6 +69,7 @@ public class ChangedFilesProvider {
 
         CollectingOutputStream stdout = new CollectingOutputStream();
         CollectingOutputStream stderr = new CollectingOutputStream();
+        //We use Apache Commons Exec because we do not want to re-invent the wheel as ProcessBuilder hangs if the output or error buffer is full
         DefaultExecutor exec = new DefaultExecutor();
         exec.setStreamHandler(new PumpStreamHandler(stdout, stderr));
         exec.setWorkingDirectory(gitRoot);
