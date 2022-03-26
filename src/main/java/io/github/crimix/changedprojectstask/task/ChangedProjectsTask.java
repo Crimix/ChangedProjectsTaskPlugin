@@ -126,7 +126,11 @@ public class ChangedProjectsTask {
 
     private String getPathToTask(Project project) {
         String taskToRun = extension.getTaskToRun().getOrNull();
-        return String.format("%s:%s", project.getPath(), taskToRun);
+        if (project.isRootProject()) {
+            return String.format(":%s", taskToRun);
+        } else {
+            return String.format("%s:%s", project.getPath(), taskToRun);
+        }
     }
 
 }

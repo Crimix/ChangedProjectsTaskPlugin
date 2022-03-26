@@ -2,19 +2,20 @@ package io.github.crimix.changedprojectstask.providers;
 
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfiguration;
 import io.github.crimix.changedprojectstask.extensions.Extensions;
+import io.github.crimix.changedprojectstask.utils.CollectingOutputStream;
 import io.github.crimix.changedprojectstask.utils.Pair;
 import lombok.SneakyThrows;
 import lombok.experimental.ExtensionMethod;
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.PumpStreamHandler;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -66,25 +67,18 @@ public class ChangedFilesProvider {
             throw new IllegalStateException("The project does not have a git root");
         }
 
-        //Get the git diff
-        Process gitCommand = new ProcessBuilder()
-                .command("git", "diff", "--name-only", commitIds.getValue(), commitIds.getKey())
-                .directory(gitRoot)
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectError(ProcessBuilder.Redirect.PIPE)
-                .start();
+        CollectingOutputStream stdout = new CollectingOutputStream();
+        CollectingOutputStream stderr = new CollectingOutputStream();
+        DefaultExecutor exec = new DefaultExecutor();
+        exec.setStreamHandler(new PumpStreamHandler(stdout, stderr));
+        exec.setWorkingDirectory(gitRoot);
+        exec.execute(CommandLine.parse(String.format("git diff --name-only %s %s", commitIds.getValue(), commitIds.getKey())));
 
-        gitCommand.waitFor(5, TimeUnit.MINUTES);
-
-        if (gitCommand.exitValue() != 0) {
-            throw new IllegalStateException("Non-zero exit value when running git diff command");
+        if (stderr.isNotEmpty()) {
+            throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stdout));
         }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(gitCommand.getInputStream()));
-        List<String> lines = reader.lines()
-                .collect(Collectors.toList());
-
-        if (lines.isEmpty()) {
+        if (stdout.isEmpty()) {
             throw new IllegalStateException("Git diff returned no results this must be a mistake");
         }
 
@@ -97,7 +91,7 @@ public class ChangedFilesProvider {
                 .orElse(x -> false);
 
         //Filter and return the list
-        return lines.stream()
+        return stdout.getLines().stream()
                 .filter(Predicate.not(filter))
                 .collect(Collectors.toList());
     }

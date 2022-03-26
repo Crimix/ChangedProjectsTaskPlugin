@@ -1,0 +1,45 @@
+package io.github.crimix.changedprojectstask.utils;
+
+import org.apache.commons.exec.LogOutputStream;
+
+import java.util.LinkedList;
+import java.util.List;
+
+public class CollectingOutputStream extends LogOutputStream {
+
+    private final List<String> lines = new LinkedList<>();
+
+    @Override
+    protected void processLine(String line, int level) {
+        lines.add(line);
+    }
+
+    /**
+     * Gets the lines collected by the output stream.
+     * @return the lines collected by the output stream.
+     */
+    public List<String> getLines() {
+        return lines;
+    }
+
+    /**
+     * Returns whether the output stream does not contain any lines.
+     * @return true if the output stream does not contain any lines.
+     */
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
+
+    /**
+     * Returns whether the output stream does contain any lines.
+     * @return true if the output stream does contain any lines.
+     */
+    public boolean isEmpty() {
+        return lines.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return String.join("\n", lines);
+    }
+}

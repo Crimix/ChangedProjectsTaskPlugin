@@ -21,6 +21,10 @@ public class ProjectNode {
                 .collect(Collectors.toMap(p -> p.getProjectDirName(), ProjectNode::new));
     }
 
+    /**
+     * Gets thr project.
+     * @return the project of the node
+     */
     public Project getProject() {
         return project;
     }

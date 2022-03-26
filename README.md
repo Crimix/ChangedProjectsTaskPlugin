@@ -39,7 +39,7 @@ As seen above, there are a few different configuration options available
 
 ## Usage
 To use the added `runTaskForChangedProjects` from this plugin you need to run it with a few parameters.
-The minimum required is `-PchangedProjectsTask.enable` which enables the plugin to run.
+The minimum required is `-PchangedProjectsTask.run` which enables the plugin to run.
 Then there are two other optional parameters `-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit`.
 
 - `-PchangedProjectsTask.commit` is to configure which commit to use in the git diff.
@@ -73,6 +73,9 @@ changedProjectsTask {
     taskToRun = "print"
 }
 ```
+Then run the following Gradle command line   
+`runTaskForChangedProjects -PchangedProjectsTask.run`
+
 This example will print the path of all the projects that is affected by some change and write `Task x:print SKIPPED` for those not affected.  
 You can use this to test how the plugin works and also set up the configuration of the plugin using real-world changes in your project.  
 This way to can skip running time-consuming task like test when you are just configuring the plugin.

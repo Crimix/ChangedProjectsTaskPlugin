@@ -8,6 +8,7 @@ import org.gradle.api.logging.Logger;
 import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 import static io.github.crimix.changedprojectstask.utils.Properties.CURRENT_COMMIT;
 import static io.github.crimix.changedprojectstask.utils.Properties.ENABLE;
@@ -92,7 +93,13 @@ public class Extensions {
         } else if (taskToRun.startsWith(":")) {
             throw new IllegalArgumentException("changedProjectsTask: taskToRun should not start with :");
         }
-        configuration.getAlwaysRunProject().getOrElse(Collections.emptySet());
+        Set<String> projectsAlwaysRun = configuration.getAlwaysRunProject().getOrElse(Collections.emptySet());
+        for (String project : projectsAlwaysRun) {
+            if (!project.startsWith(":")) {
+                throw new IllegalArgumentException(String.format("changedProjectsTask: alwaysRunProject %s must start with :", project));
+            }
+        }
+
         configuration.getAffectsAllRegex().getOrElse(Collections.emptySet()); //Gradle will throw if the type does not match
         configuration.getIgnoredRegex().getOrElse(Collections.emptySet()); //Gradle will throw if the type does not match
         String mode = configuration.getChangedProjectsMode().getOrElse(ChangedProjectsChoice.INCLUDE_DEPENDENTS.name());
