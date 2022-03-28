@@ -12,7 +12,7 @@ plugins {
 }
 
 group 'io.github.crimix'
-version '1.1-SNAPSHOT'
+version '1.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
