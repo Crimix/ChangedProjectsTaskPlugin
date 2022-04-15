@@ -3,7 +3,6 @@ package io.github.crimix.changedprojectstask.providers;
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfiguration;
 import io.github.crimix.changedprojectstask.extensions.Extensions;
 import io.github.crimix.changedprojectstask.utils.CollectingOutputStream;
-import io.github.crimix.changedprojectstask.utils.Pair;
 import lombok.SneakyThrows;
 import lombok.experimental.ExtensionMethod;
 import org.apache.commons.exec.CommandLine;
@@ -15,49 +14,26 @@ import org.gradle.api.logging.Logger;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static io.github.crimix.changedprojectstask.utils.Properties.CURRENT_COMMIT;
-import static io.github.crimix.changedprojectstask.utils.Properties.PREVIOUS_COMMIT;
-
 @ExtensionMethod(Extensions.class)
 public class ChangedFilesProvider {
 
-    // The default if no commit ids have been specified
-    private static final String HEAD = "HEAD";
-
     private final Project project;
     private final ChangedProjectsConfiguration extension;
-    private final Pair<String, String> commitIds;
+    private final GitCommandProvider gitCommandProvider;
     private final List<File> filteredChanges;
     private final boolean affectsAllProjects;
 
     public ChangedFilesProvider(Project project, ChangedProjectsConfiguration extension) {
         this.project = project;
         this.extension = extension;
-        this.commitIds = initCommitIds();
+        this.gitCommandProvider = new GitCommandProvider(project);
         List<String> gitFilteredChanges = initFilteredChanges();
         this.filteredChanges = initFilteredChangedFiles(gitFilteredChanges);
         this.affectsAllProjects = initAffectsAllProjects(gitFilteredChanges);
-    }
-
-    private Pair<String, String> initCommitIds() {
-        Optional<String> currentCommitId = project.getCommitId();
-        Optional<String> previousCommitId = project.getPreviousCommitId();
-
-        //If only currentCommitId has been specified then we assume that it is the diff of that specific commit
-        if (currentCommitId.isPresent() && previousCommitId.isPresent()) {
-          return new Pair<>(currentCommitId.get(), String.format("%s~", previousCommitId.get()));
-        } else if (currentCommitId.isPresent()) {
-            return new Pair<>(currentCommitId.get(), String.format("%s~", currentCommitId.get()));
-        } else if (previousCommitId.isPresent()) {
-            throw new IllegalStateException(String.format("When using %s then %s must also be specified", PREVIOUS_COMMIT, CURRENT_COMMIT));
-        } else {
-            return new Pair<>(HEAD, String.format("%s~", HEAD));
-        }
     }
 
     @SneakyThrows
@@ -73,7 +49,7 @@ public class ChangedFilesProvider {
         DefaultExecutor exec = new DefaultExecutor();
         exec.setStreamHandler(new PumpStreamHandler(stdout, stderr));
         exec.setWorkingDirectory(gitRoot);
-        exec.execute(CommandLine.parse(String.format("git diff --name-only %s %s", commitIds.getValue(), commitIds.getKey())));
+        exec.execute(CommandLine.parse(gitCommandProvider.getGitDiffCommand()));
 
         if (stderr.isNotEmpty()) {
             throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stdout));
@@ -143,7 +119,7 @@ public class ChangedFilesProvider {
      */
     public void printDebug(Logger logger) {
         if (extension.shouldLog()) {
-            logger.lifecycle("Git diff command will use {} {}", commitIds.getValue(), commitIds.getKey());
+            logger.lifecycle("Git diff command uses {}", gitCommandProvider.getGitDiffCommand());
             logger.lifecycle("All projects affected? {}", isAllProjectsAffected());
             logger.lifecycle("Changed files:");
             getChangedFiles()

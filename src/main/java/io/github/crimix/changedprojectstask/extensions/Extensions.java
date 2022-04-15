@@ -2,6 +2,7 @@ package io.github.crimix.changedprojectstask.extensions;
 
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsChoice;
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfiguration;
+import io.github.crimix.changedprojectstask.utils.GitDiffMode;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.github.crimix.changedprojectstask.utils.Properties.COMMIT_MODE;
 import static io.github.crimix.changedprojectstask.utils.Properties.CURRENT_COMMIT;
 import static io.github.crimix.changedprojectstask.utils.Properties.ENABLE;
 import static io.github.crimix.changedprojectstask.utils.Properties.PREVIOUS_COMMIT;
@@ -63,6 +65,20 @@ public class Extensions {
                 .map(Project::getRootProject)
                 .map(p -> p.findProperty(PREVIOUS_COMMIT))
                 .map(String.class::cast);
+    }
+
+    /**
+     * Gets the configured git commit compare mode if specified.
+     * Defaults to {@link GitDiffMode#COMMIT} if none specified.
+     * @return the configured git compare mode or {@link GitDiffMode#COMMIT}
+     */
+    public static GitDiffMode getCommitCompareMode(Project project) {
+        return Optional.of(project)
+                .map(Project::getRootProject)
+                .map(p -> p.findProperty(COMMIT_MODE))
+                .map(String.class::cast)
+                .map(GitDiffMode::getMode)
+                .orElse(GitDiffMode.COMMIT);
     }
 
     /**

@@ -40,18 +40,43 @@ As seen above, there are a few different configuration options available
 ## Usage
 To use the added `runTaskForChangedProjects` from this plugin you need to run it with a few parameters.
 The minimum required is `-PchangedProjectsTask.run` which enables the plugin to run.
-Then there are two other optional parameters `-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit`.
+Depending on usage, it might also be a good idea to run it with `--continue` such that all dependent tasks are run, instead of fail-fast behaviour.
+Then there are three other optional parameters `-PchangedProjectsTask.commit`, `-PchangedProjectsTask.prevCommit` and `-PchangedProjectsTask.compareMode`.
 
-- `-PchangedProjectsTask.commit` is to configure which commit to use in the git diff.
+- `-PchangedProjectsTask.commit` is to configure which ref to use in the git diff.
   - If this is specified with `-PchangedProjectsTask.prevCommit` it creates a range to use in diff.   
   By calling the following `git diff --name-only prevCommit~ commit`.
   - If it is specified with `-PchangedProjectsTask.prevCommit`, it uses the following command instead  
   `git diff --name-only commit~ commit`
-- `-PchangedProjectsTask.prevCommit` is to configure which previous commit to use in the git diff.   
+  
+
+- `-PchangedProjectsTask.prevCommit` is to configure which previous ref to use in the git diff.   
 This cannot be used without also using `-PchangedProjectsTask.commit`
 
-If neither `-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` is specified when running the `runTaskForChangedProjects`
-then it simply defaults to using `HEAD` by calling this command instead `git diff --name-only HEAD~ HEAD`.
+
+- `-PchangedProjectsTask.compareMode` is used to change which mode it uses to compare.
+The following modes are available
+  - `commit` (Default, the `-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` options are the commit ids and makes use of `~`)
+  - `branch` (`-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` are now branch names and will be used like the following `git diff --name-only prev curr`, where `curr` is `-PchangedProjectsTask.commit`)
+  - `branchTwoDotted` (`-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` are branch names and will be used like the following `git diff --name-only prev..curr`)
+  - `branchThreeDotted` (`-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` are branch names and will be used like the following `git diff --name-only prev..curr`)
+
+If either `-PchangedProjectsTask.commit` and `-PchangedProjectsTask.prevCommit` is not specified when running the `runTaskForChangedProjects` command,
+then that option simply defaults to `HEAD` if it is allowed to by the logic, otherwise an error is thrown.
+
+The following table illustrates the allowed and available options and how the resulting diff command looks
+
+| **Mode**          | **Current** | **Previous** | **Git diff command**               |
+|-------------------|-------------|--------------|------------------------------------|
+| commit            |             |              | `git diff --name-only HEAD~ HEAD`  |
+| commit            | curr        |              | `git diff --name-only curr~ curr`  |
+| commit            | curr        | prev         | `git diff --name-only prev~ curr`  |
+| branch            | curr        | prev         | `git diff --name-only prev curr`   |
+| branch            |             | prev         | `git diff --name-only prev HEAD`   |
+| branchTwoDotted   | curr        | prev         | `git diff --name-only prev..curr`  |
+| branchTwoDotted   |             | prev         | `git diff --name-only prev..`      |
+| branchThreeDotted | curr        | prev         | `git diff --name-only prev...curr` |
+| branchThreeDotted |             | prev         | `git diff --name-only prev...`     |
 
 ## Example for evaluating the plugin
 This is a basic example you can use to evaluate the plugin on your project, apply the following to your own root `build.gradle`.
@@ -79,6 +104,20 @@ Then run the following Gradle command line
 This example will print the path of all the projects that is affected by some change and write `Task x:print SKIPPED` for those not affected.  
 You can use this to test how the plugin works and also set up the configuration of the plugin using real-world changes in your project.  
 This way to can skip running time-consuming task like test when you are just configuring the plugin.
+
+## FAQ
+### Dependent task execution stops on first failed
+Normally Gradle uses a fail-fast approach except for the test task. This means that if a dependent task fails the build stops.
+Depending on the use case it can be preferable, but if this plugin is used to skip unit tests, the wanted behavior will probably to execute all test tasks.
+
+The way to get the wanted behaviour is to run the task as the following
+```
+--continue runTaskForChangedProjects -PchangedProjectsTask.run
+```
+
+This caused Gradle to execute all tasks even if the fail and still report the build as failed when it is done.
+This way it is possible to run all dependent tasks and get all unit test results to present to the user. 
+
 
 ## Why did I make this
 I have for at least a month been looking for a plugin or way to do this in Gradle.

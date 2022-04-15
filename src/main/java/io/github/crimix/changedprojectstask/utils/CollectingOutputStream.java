@@ -23,16 +23,16 @@ public class CollectingOutputStream extends LogOutputStream {
     }
 
     /**
-     * Returns whether the output stream does not contain any lines.
-     * @return true if the output stream does not contain any lines.
+     * Returns whether this stream collected any lines.
+     * @return true if the output stream collected lines from the output.
      */
     public boolean isNotEmpty() {
         return !isEmpty();
     }
 
     /**
-     * Returns whether the output stream does contain any lines.
-     * @return true if the output stream does contain any lines.
+     * Returns whether this stream did not collect any lines.
+     * @return true if the output stream did not collect any lines from the output.
      */
     public boolean isEmpty() {
         return lines.isEmpty();

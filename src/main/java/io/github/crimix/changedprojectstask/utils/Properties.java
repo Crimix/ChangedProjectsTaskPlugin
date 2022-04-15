@@ -8,4 +8,5 @@ public class Properties {
     public static final String ENABLE = "changedProjectsTask.run";
     public static final String CURRENT_COMMIT = "changedProjectsTask.commit";
     public static final String PREVIOUS_COMMIT = "changedProjectsTask.prevCommit";
+    public static final String COMMIT_MODE = "changedProjectsTask.compareMode";
 }
