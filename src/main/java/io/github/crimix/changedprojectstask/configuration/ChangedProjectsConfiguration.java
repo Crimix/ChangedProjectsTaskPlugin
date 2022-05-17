@@ -30,6 +30,12 @@ public interface ChangedProjectsConfiguration {
     SetProperty<String> getAlwaysRunProject();
 
     /**
+     * The projects to never execute the task on even when it has not changed.
+     * @return a list of project paths
+     */
+    SetProperty<String> getNeverRunProject();
+
+    /**
      * The list of regexes that filters the not ignored changes to see if any change has been marked to affect all projects
      * and thus needs to run the task on the root project instead.
      * @return a list of compiled patterns

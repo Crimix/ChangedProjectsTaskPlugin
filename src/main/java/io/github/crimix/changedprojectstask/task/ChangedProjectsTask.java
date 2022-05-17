@@ -27,6 +27,7 @@ public class ChangedProjectsTask {
     private boolean affectsAll = false;
     private Set<Project> affectedProjects = new HashSet<>();
     private Set<Project> alwaysRunProjects = new HashSet<>();
+    private Set<Project> neverRunProjects = new HashSet<>();
 
     private ChangedProjectsTask(Project project, Task task, ChangedProjectsConfiguration extension) {
         this.project = project;
@@ -52,9 +53,13 @@ public class ChangedProjectsTask {
             task.dependsOn(path);
             Task otherTask = p.getTasks().findByPath(path);
             if (otherTask != null) {
-                otherTask.onlyIf(t -> affectsAll || affectedProjects.contains(p) || alwaysRunProjects.contains(p));
+                otherTask.onlyIf(t -> shouldProjectRun(p));
             }
         });
+    }
+
+    private boolean shouldProjectRun(Project p) {
+        return !neverRunProjects.contains(p) && (affectsAll || affectedProjects.contains(p) || alwaysRunProjects.contains(p));
     }
 
     private void configureAfterAllEvaluate() {
@@ -69,7 +74,7 @@ public class ChangedProjectsTask {
                 return; //If there are no changes, and we are not forced to run all projects, just skip the rest of the configuration
             }
 
-            configureAlwaysRun(project);
+            configureAlwaysAndNeverRun(project);
 
             // If we have already determined that we should run all, then no need to spend more time on finding the specific projects
             if (changedFilesProvider.isAllProjectsAffected()) {
@@ -105,11 +110,22 @@ public class ChangedProjectsTask {
                 .collect(Collectors.toSet());
     }
 
-    private void configureAlwaysRun(Project project) {
+    private void configureAlwaysAndNeverRun(Project project) {
         Set<String> alwaysRunPath = extension.getAlwaysRunProject().getOrElse(Collections.emptySet());
         alwaysRunProjects = project.getAllprojects().stream()
                 .filter(p -> alwaysRunPath.contains(p.getPath()))
                 .collect(Collectors.toSet());
+        if (extension.shouldLog()) {
+            getLogger().lifecycle("Always run projects: {}", alwaysRunProjects);
+        }
+
+        Set<String> neverRunPath = extension.getNeverRunProject().getOrElse(Collections.emptySet());
+        neverRunProjects = project.getAllprojects().stream()
+                .filter(p -> neverRunPath.contains(p.getPath()))
+                .collect(Collectors.toSet());
+        if (extension.shouldLog()) {
+            getLogger().lifecycle("Never run projects: {}", neverRunProjects);
+        }
     }
 
     private Project getRootProject() {

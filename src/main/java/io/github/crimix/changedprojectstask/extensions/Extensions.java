@@ -143,6 +143,7 @@ public class Extensions {
             logger.lifecycle("Printing configuration");
             logger.lifecycle("Task to run {}", configuration.getTaskToRun().getOrNull());
             logger.lifecycle("Always run project {}", configuration.getAlwaysRunProject().getOrElse(Collections.emptySet()));
+            logger.lifecycle("Never run project {}", configuration.getNeverRunProject().getOrElse(Collections.emptySet()));
             logger.lifecycle("Affects all regex {}", configuration.getAffectsAllRegex().getOrElse(Collections.emptySet()));
             logger.lifecycle("Ignored regex {}", configuration.getIgnoredRegex().getOrElse(Collections.emptySet()));
             logger.lifecycle("Mode {}", getPluginMode(configuration));
