@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 public class ChangedProjectsTask {
 
     private final Project project;
-    private final Task task;
+    private final Task changedProjectsTask;
     private final ChangedProjectsConfiguration extension;
 
     private boolean affectsAll = false;
@@ -29,10 +29,10 @@ public class ChangedProjectsTask {
     private Set<Project> alwaysRunProjects = new HashSet<>();
     private Set<Project> neverRunProjects = new HashSet<>();
 
-    private ChangedProjectsTask(Project project, Task task, ChangedProjectsConfiguration extension) {
+    private ChangedProjectsTask(Project project, Task changedProjectsTask, ChangedProjectsConfiguration extension) {
         this.project = project;
-        this.task = task;
         this.extension = extension;
+        this.changedProjectsTask = changedProjectsTask;
     }
 
     public static void configureAndRun(Project project, Task task, ChangedProjectsConfiguration extension) {
@@ -49,11 +49,12 @@ public class ChangedProjectsTask {
 
     private void configureProject(Project project) {
         project.afterEvaluate(p -> {
-            String path = getPathToTask(p);
-            task.dependsOn(path);
-            Task otherTask = p.getTasks().findByPath(path);
-            if (otherTask != null) {
-                otherTask.onlyIf(t -> shouldProjectRun(p));
+            Task taskToRun = p.getTasks().findByPath(getPathToTask(p));
+
+            if (taskToRun != null) {
+                //make taskToRun run after changedProjectsTask
+                changedProjectsTask.dependsOn(taskToRun);
+                taskToRun.onlyIf(t -> shouldProjectRun(p));
             }
         });
     }
@@ -63,7 +64,7 @@ public class ChangedProjectsTask {
     }
 
     private void configureAfterAllEvaluate() {
-        extension.validate();
+        extension.validate(getRootProject());
         if (hasBeenEnabled()) {
             extension.print(getLogger());
             Project project = getRootProject();
@@ -97,7 +98,7 @@ public class ChangedProjectsTask {
                     }
                 }
 
-              affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
+                affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
                         .collect(Collectors.toSet());
             }
         }
@@ -123,6 +124,7 @@ public class ChangedProjectsTask {
         neverRunProjects = project.getAllprojects().stream()
                 .filter(p -> neverRunPath.contains(p.getPath()))
                 .collect(Collectors.toSet());
+
         if (extension.shouldLog()) {
             getLogger().lifecycle("Never run projects: {}", neverRunProjects);
         }
@@ -141,7 +143,14 @@ public class ChangedProjectsTask {
     }
 
     private String getPathToTask(Project project) {
-        String taskToRun = extension.getTaskToRun().getOrNull();
+        String taskToRun = Extensions
+                .getTaskToRunParameter(project)
+                .orElse(extension.getTaskToRun().getOrNull());
+
+        if (extension.shouldLog()) {
+            getLogger().lifecycle("taskToRun: {}", taskToRun);
+        }
+
         if (project.isRootProject()) {
             return String.format(":%s", taskToRun);
         } else {

@@ -11,10 +11,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.github.crimix.changedprojectstask.utils.Properties.COMMIT_MODE;
-import static io.github.crimix.changedprojectstask.utils.Properties.CURRENT_COMMIT;
-import static io.github.crimix.changedprojectstask.utils.Properties.ENABLE;
-import static io.github.crimix.changedprojectstask.utils.Properties.PREVIOUS_COMMIT;
+import static io.github.crimix.changedprojectstask.utils.Properties.*;
 
 /**
  * Class the contains the Lombok extension methods
@@ -23,6 +20,7 @@ public class Extensions {
 
     /**
      * Returns whether the project is the root project.
+     *
      * @return true if the project is the root project
      */
     public static boolean isRootProject(Project project) {
@@ -31,6 +29,7 @@ public class Extensions {
 
     /**
      * Gets the name of the project's directory
+     *
      * @return the name of the project's directory
      */
     public static String getProjectDirName(Project project) {
@@ -39,6 +38,7 @@ public class Extensions {
 
     /**
      * Returns whether the plugin's task is allowed to run and configure.
+     *
      * @return true if the plugin's task is allowed to run and configure
      */
     public static boolean hasBeenEnabled(Project project) {
@@ -47,6 +47,7 @@ public class Extensions {
 
     /**
      * Gets the configured commit id
+     *
      * @return either an optional with the commit id or an empty optional if it has not been configured
      */
     public static Optional<String> getCommitId(Project project) {
@@ -57,7 +58,18 @@ public class Extensions {
     }
 
     /**
+     *
+     */
+    public static Optional<String> getTaskToRunParameter(Project project) {
+        return Optional.of(project)
+                .map(Project::getRootProject)
+                .map(p -> p.findProperty(TASK_TO_RUN))
+                .map(String.class::cast);
+    }
+
+    /**
      * Gets the configured previous commit id
+     *
      * @return either an optional with the previous commit id or an empty optional if it has not been configured
      */
     public static Optional<String> getPreviousCommitId(Project project) {
@@ -70,6 +82,7 @@ public class Extensions {
     /**
      * Gets the configured git commit compare mode if specified.
      * Defaults to {@link GitDiffMode#COMMIT} if none specified.
+     *
      * @return the configured git compare mode or {@link GitDiffMode#COMMIT}
      */
     public static GitDiffMode getCommitCompareMode(Project project) {
@@ -83,13 +96,14 @@ public class Extensions {
 
     /**
      * Finds the git root for the project.
+     *
      * @return a file that represents the git root of the project.
      */
     public static File getGitRootDir(Project project) {
         File currentDir = project.getRootProject().getProjectDir();
 
         //Keep going until we either hit a .git dir or the root of the file system on either Windows or Linux
-        while (currentDir != null && !currentDir.getPath().equals("/"))  {
+        while (currentDir != null && !currentDir.getPath().equals("/")) {
             if (new File(String.format("%s/.git", currentDir.getPath())).exists()) {
                 return currentDir;
             }
@@ -102,13 +116,15 @@ public class Extensions {
     /**
      * Runs validation on the configuration.
      */
-    public static void validate(ChangedProjectsConfiguration configuration) {
+    public static void validate(ChangedProjectsConfiguration configuration, Project rootProject) {
         String taskToRun = configuration.getTaskToRun().getOrNull();
-        if (taskToRun == null) {
+
+        if (taskToRun == null && Extensions.getTaskToRunParameter(rootProject).isEmpty()) {
             throw new IllegalArgumentException("changedProjectsTask: taskToRun is required");
-        } else if (taskToRun.startsWith(":")) {
+        } else if (taskToRun != null && taskToRun.startsWith(":")) {
             throw new IllegalArgumentException("changedProjectsTask: taskToRun should not start with :");
         }
+
         Set<String> projectsAlwaysRun = configuration.getAlwaysRunProject().getOrElse(Collections.emptySet());
         for (String project : projectsAlwaysRun) {
             if (!project.startsWith(":")) {
@@ -122,12 +138,13 @@ public class Extensions {
         try {
             ChangedProjectsChoice.valueOf(mode);
         } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException(String.format("changedProjectsTask: ChangedProjectsMode must be either %s or %s ",ChangedProjectsChoice.ONLY_DIRECTLY.name(), ChangedProjectsChoice.INCLUDE_DEPENDENTS.name()));
+            throw new IllegalArgumentException(String.format("changedProjectsTask: ChangedProjectsMode must be either %s or %s ", ChangedProjectsChoice.ONLY_DIRECTLY.name(), ChangedProjectsChoice.INCLUDE_DEPENDENTS.name()));
         }
     }
 
     /**
      * Gets the plugin's configured mode
+     *
      * @return the mode the plugin is configured to use
      */
     public static ChangedProjectsChoice getPluginMode(ChangedProjectsConfiguration configuration) {
@@ -136,6 +153,7 @@ public class Extensions {
 
     /**
      * Prints the configuration.
+     *
      * @param logger the logger to print the configuration to.
      */
     public static void print(ChangedProjectsConfiguration configuration, Logger logger) {
@@ -153,6 +171,7 @@ public class Extensions {
 
     /**
      * Returns whether the plugin should log debug information to the Gradle log
+     *
      * @return true if the plugin should debug log
      */
     public static boolean shouldLog(ChangedProjectsConfiguration configuration) {
