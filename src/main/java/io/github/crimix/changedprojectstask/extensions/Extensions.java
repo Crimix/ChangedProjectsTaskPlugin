@@ -58,7 +58,9 @@ public class Extensions {
     }
 
     /**
+     * Gets the task to run from the command line arguments if given
      *
+     * @return task to run CLI argument
      */
     public static Optional<String> getTaskToRunParameter(Project project) {
         return Optional.of(project)
