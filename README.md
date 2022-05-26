@@ -42,7 +42,10 @@ As seen above, there are a few different configuration options available
 To use the added `runTaskForChangedProjects` from this plugin you need to run it with a few parameters.
 The minimum required is `-PchangedProjectsTask.run` which enables the plugin to run.
 Depending on usage, it might also be a good idea to run it with `--continue` such that all dependent tasks are run, instead of fail-fast behaviour.
-Then there are three other optional parameters `-PchangedProjectsTask.commit`, `-PchangedProjectsTask.prevCommit` and `-PchangedProjectsTask.compareMode`.
+Then there are three other optional parameters `-PchangedProjectsTask.commit`, `-PchangedProjectsTask.prevCommit` and `-PchangedProjectsTask.compareMode` and `-PchangedProjectsTask.taskToRun`.
+
+- `-PchangedProjectsTask.taskToRun` let's you configure the task to run on demand. If provided, the taskToRun is not required in the config anymore. It will also have higher priority as the task provided in the configuration.
+
 
 - `-PchangedProjectsTask.commit` is to configure which ref to use in the git diff.
   - If this is specified with `-PchangedProjectsTask.prevCommit` it creates a range to use in diff.   
