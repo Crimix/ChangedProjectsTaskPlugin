@@ -63,9 +63,9 @@ public class ChangedProjectsTask {
     }
 
     private void configureAfterAllEvaluate() {
-        extension.validate();
+        extension.validate(project);
         if (hasBeenEnabled()) {
-            extension.print(getLogger());
+            extension.print(project, getLogger());
             Project project = getRootProject();
             ChangedFilesProvider changedFilesProvider = new ChangedFilesProvider(project, extension);
             changedFilesProvider.printDebug(getLogger());
@@ -97,7 +97,7 @@ public class ChangedProjectsTask {
                     }
                 }
 
-              affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
+                affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
                         .collect(Collectors.toSet());
             }
         }
@@ -141,7 +141,7 @@ public class ChangedProjectsTask {
     }
 
     private String getPathToTask(Project project) {
-        String taskToRun = extension.getTaskToRun().getOrNull();
+        String taskToRun = project.getTaskToRun(extension);
         if (project.isRootProject()) {
             return String.format(":%s", taskToRun);
         } else {

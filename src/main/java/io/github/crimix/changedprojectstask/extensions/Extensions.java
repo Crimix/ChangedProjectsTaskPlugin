@@ -11,10 +11,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.github.crimix.changedprojectstask.utils.Properties.COMMIT_MODE;
-import static io.github.crimix.changedprojectstask.utils.Properties.CURRENT_COMMIT;
-import static io.github.crimix.changedprojectstask.utils.Properties.ENABLE;
-import static io.github.crimix.changedprojectstask.utils.Properties.PREVIOUS_COMMIT;
+import static io.github.crimix.changedprojectstask.utils.Properties.*;
 
 /**
  * Class the contains the Lombok extension methods
@@ -43,6 +40,19 @@ public class Extensions {
      */
     public static boolean hasBeenEnabled(Project project) {
         return project.getRootProject().hasProperty(ENABLE);
+    }
+
+
+    /**
+     * Gets the task to run, this is either the override from CLI arugment of the default configured task.
+     * @return task to run
+     */
+    public static String getTaskToRun(Project project, ChangedProjectsConfiguration configuration) {
+        return Optional.of(project)
+                .map(Project::getRootProject)
+                .map(p -> p.findProperty(TASK_TO_RUN))
+                .map(String.class::cast)
+                .orElseGet(() -> configuration.getTaskToRun().getOrNull());
     }
 
     /**
@@ -89,7 +99,7 @@ public class Extensions {
         File currentDir = project.getRootProject().getProjectDir();
 
         //Keep going until we either hit a .git dir or the root of the file system on either Windows or Linux
-        while (currentDir != null && !currentDir.getPath().equals("/"))  {
+        while (currentDir != null && !currentDir.getPath().equals("/")) {
             if (new File(String.format("%s/.git", currentDir.getPath())).exists()) {
                 return currentDir;
             }
@@ -102,9 +112,9 @@ public class Extensions {
     /**
      * Runs validation on the configuration.
      */
-    public static void validate(ChangedProjectsConfiguration configuration) {
-        String taskToRun = configuration.getTaskToRun().getOrNull();
-        if (taskToRun == null) {
+    public static void validate(ChangedProjectsConfiguration configuration, Project root) {
+        String taskToRun = getTaskToRun(root, configuration);
+        if (taskToRun == null || taskToRun.isEmpty()) {
             throw new IllegalArgumentException("changedProjectsTask: taskToRun is required");
         } else if (taskToRun.startsWith(":")) {
             throw new IllegalArgumentException("changedProjectsTask: taskToRun should not start with :");
@@ -122,7 +132,7 @@ public class Extensions {
         try {
             ChangedProjectsChoice.valueOf(mode);
         } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException(String.format("changedProjectsTask: ChangedProjectsMode must be either %s or %s ",ChangedProjectsChoice.ONLY_DIRECTLY.name(), ChangedProjectsChoice.INCLUDE_DEPENDENTS.name()));
+            throw new IllegalArgumentException(String.format("changedProjectsTask: ChangedProjectsMode must be either %s or %s ", ChangedProjectsChoice.ONLY_DIRECTLY.name(), ChangedProjectsChoice.INCLUDE_DEPENDENTS.name()));
         }
     }
 
@@ -138,10 +148,10 @@ public class Extensions {
      * Prints the configuration.
      * @param logger the logger to print the configuration to.
      */
-    public static void print(ChangedProjectsConfiguration configuration, Logger logger) {
+    public static void print(ChangedProjectsConfiguration configuration, Project project, Logger logger) {
         if (shouldLog(configuration)) {
             logger.lifecycle("Printing configuration");
-            logger.lifecycle("Task to run {}", configuration.getTaskToRun().getOrNull());
+            logger.lifecycle("Task to run {}", getTaskToRun(project, configuration));
             logger.lifecycle("Always run project {}", configuration.getAlwaysRunProject().getOrElse(Collections.emptySet()));
             logger.lifecycle("Never run project {}", configuration.getNeverRunProject().getOrElse(Collections.emptySet()));
             logger.lifecycle("Affects all regex {}", configuration.getAffectsAllRegex().getOrElse(Collections.emptySet()));

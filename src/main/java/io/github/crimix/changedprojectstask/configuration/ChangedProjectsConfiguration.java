@@ -30,7 +30,7 @@ public interface ChangedProjectsConfiguration {
     SetProperty<String> getAlwaysRunProject();
 
     /**
-     * The projects to never execute the task on even when it has not changed.
+     * The projects to never execute the task on even when it has changed.
      * @return a list of project paths
      */
     SetProperty<String> getNeverRunProject();
