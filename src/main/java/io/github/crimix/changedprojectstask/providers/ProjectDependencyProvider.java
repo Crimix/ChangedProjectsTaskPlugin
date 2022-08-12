@@ -3,7 +3,6 @@ package io.github.crimix.changedprojectstask.providers;
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfiguration;
 import io.github.crimix.changedprojectstask.extensions.Extensions;
 import io.github.crimix.changedprojectstask.utils.Pair;
-import io.github.crimix.changedprojectstask.utils.ProjectNode;
 import lombok.experimental.ExtensionMethod;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -11,13 +10,15 @@ import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @ExtensionMethod(Extensions.class)
@@ -26,13 +27,11 @@ public class ProjectDependencyProvider {
     private final Project project;
     private final ChangedProjectsConfiguration extension;
     private final Map<Project, Set<Project>> projectDependentsMap;
-    private final ProjectNode rootNode;
 
     public ProjectDependencyProvider(Project project, ChangedProjectsConfiguration extension) {
         this.project = project;
         this.extension = extension;
         this.projectDependentsMap = initProjectDependents();
-        this.rootNode = new ProjectNode(project.getRootProject());
     }
 
     private Map<Project, Set<Project>> initProjectDependents() {
@@ -57,27 +56,41 @@ public class ProjectDependencyProvider {
     }
 
     public Project getChangedProject(File file) {
-        String filePath = file.getPath();
-        if (!filePath.contains(project.getRootProject().getProjectDirName() + File.separator)) {
-            return null; //We return null here as there is no need to try and step though the map
+        Path filePath = file.getCanonicalFilePath();
+        if (!filePath.startsWith(project.getRootProject().getCanonicalProjectPath())) {
+            return null; //We return null here as there is no need to try and find which project it belongs to
         }
 
-        //We do the split such that we can start from the root of the project and thus when we get an empty optional back we know we are done
-        filePath = filePath.split(Pattern.quote(project.getRootProject().getProjectDirName() + File.separator), 2)[1];
-        String[] paths = filePath.split(Pattern.quote(File.separator));
-        ProjectNode currentNode = rootNode;
+        //We find all projects which paths match the start of the files' path.
+        //Then we take the project which has the most overlap with the beginning of the file path
+        //Else we just use the root project as a fallback
+        Project result = project.getAllprojects().stream()
+                .filter(doesFilePathStartWithProjectDirPath(file))
+                .max(Comparator.comparingInt(Extensions::getCanonicalProjectPathStringLength))
+                .orElseGet(getFallback(file));
 
-        for (String path : paths) {
-            Optional<ProjectNode> potentialNext = currentNode.getProjectNodeFromPath(path);
-            if (potentialNext.isPresent()) {
-                currentNode = potentialNext.get();
-            } else {
-                break; //We have stepped though all the child projects as far we can, just break
+        if (extension.shouldLog()) {
+            project.getLogger().lifecycle("File {} belongs to {}", file, result);
+        }
+
+        return result;
+    }
+
+    private Predicate<Project> doesFilePathStartWithProjectDirPath(File file) {
+        return subproject -> {
+            Path subprojectPath = subproject.getCanonicalProjectPath();
+            Path filePath = file.getCanonicalFilePath();
+            return filePath.startsWith(subprojectPath);
+        };
+    }
+
+    private Supplier<Project> getFallback(File file) {
+        return () -> {
+            if (extension.shouldLog()) {
+                project.getLogger().lifecycle("USING FALLBACK for file {}", file);
             }
-        }
-
-        // We now have the project the file change belong to
-        return currentNode.getProject();
+            return project.getRootProject();
+        };
     }
 
     public Set<Project> getAffectedDependentProjects(Set<Project> directlyChangedProjects) {
@@ -113,8 +126,6 @@ public class ProjectDependencyProvider {
         if (extension.shouldLog()) {
             logger.lifecycle("Printing project dependents map");
             projectDependentsMap.forEach((key, value) -> logger.lifecycle("Project: {} is a direct dependent for the following {}", key, value));
-            logger.lifecycle("Printing project nodes");
-            logger.lifecycle(rootNode.toString());
             logger.lifecycle("");
         }
     }

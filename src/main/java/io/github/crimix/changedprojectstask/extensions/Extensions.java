@@ -3,10 +3,13 @@ package io.github.crimix.changedprojectstask.extensions;
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsChoice;
 import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfiguration;
 import io.github.crimix.changedprojectstask.utils.GitDiffMode;
+import lombok.SneakyThrows;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -107,6 +110,33 @@ public class Extensions {
         }
 
         return null;
+    }
+
+    /**
+     * Gets the canonical path to the project.
+     * @return the canonical path to the project.
+     */
+    @SneakyThrows(IOException.class)
+    public static Path getCanonicalProjectPath(Project project) {
+        return project.getProjectDir().getCanonicalFile().toPath();
+    }
+
+    /**
+     * Gets the canonical path's string length to the project.
+     * @return the canonical path's string length to the project.
+     */
+    @SneakyThrows(IOException.class)
+    public static int getCanonicalProjectPathStringLength(Project project) {
+        return project.getProjectDir().getCanonicalFile().toPath().toString().length();
+    }
+
+    /**
+     * Gets the canonical path to the file.
+     * @return the canonical path to the file.
+     */
+    @SneakyThrows(IOException.class)
+    public static Path getCanonicalFilePath(File file) {
+        return file.getCanonicalFile().toPath();
     }
 
     /**

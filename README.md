@@ -109,6 +109,26 @@ This example will print the path of all the projects that is affected by some ch
 You can use this to test how the plugin works and also set up the configuration of the plugin using real-world changes in your project.  
 This way to can skip running time-consuming task like test when you are just configuring the plugin.
 
+## Local Development
+To develop and test locally with your own projects there are a few changes needed to be made.
+ 1. First add the following to `settings.gradle` file in the root project
+  ```groovy
+  pluginManagement {
+    repositories {
+      mavenLocal()
+      gradlePluginPortal()
+    }
+  }
+  buildscript {
+    configurations.all {
+      resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+  }
+  ```
+ 2. Change the version inside of `build.gradle` in ChangedProjectsTaskPlugin to be `x.y-SNAPSHOT`
+ 3. Change the plugin version used in your project to be `x.y-SNAPSHOT`
+ 4. Do a refresh / sync of Gradle
+
 ## FAQ
 ### Dependent task execution stops on first failed
 Normally Gradle uses a fail-fast approach except for the test task. This means that if a dependent task fails the build stops.
