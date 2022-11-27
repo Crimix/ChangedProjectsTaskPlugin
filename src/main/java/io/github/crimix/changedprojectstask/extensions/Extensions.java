@@ -42,7 +42,7 @@ public class Extensions {
      * @return true if the plugin's task is allowed to run and configure
      */
     public static boolean hasBeenEnabled(Project project) {
-        return project.getRootProject().hasProperty(ENABLE);
+        return project.getRootProject().hasProperty(ENABLE) || project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
     }
 
 
@@ -69,11 +69,17 @@ public class Extensions {
                 .map(String.class::cast);
     }
 
-    public static boolean isCommandLine(Project project) {
+
+    public static boolean shouldUseCommandLine(Project project) {
+        return project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
+    }
+
+    public static String getCommandLineArgs(Project project) {
         return Optional.of(project)
                 .map(Project::getRootProject)
-                .map(p -> p.findProperty(IS_COMMAND_LINE))
-                .isPresent();
+                .map(p -> p.findProperty(COMMANDLINE_ARGS))
+                .map(String.class::cast)
+                .orElse("");
     }
 
     /**

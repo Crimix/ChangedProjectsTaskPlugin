@@ -42,7 +42,7 @@ public class ChangedProjectsTask {
 
     public static void configureAndRun(Project project, Task task, ChangedProjectsConfiguration extension) {
         ChangedProjectsTask changedProjectsTask = new ChangedProjectsTask(project, task, extension);
-        if (!project.isCommandLine()){
+        if (!project.shouldUseCommandLine()){
             changedProjectsTask.configureBeforeEvaluate();
         }
         project.getGradle().projectsEvaluated(g -> changedProjectsTask.afterEvaluate());
@@ -57,7 +57,7 @@ public class ChangedProjectsTask {
 
     private void afterEvaluate() {
         configureAfterAllEvaluate();
-        if (project.isCommandLine()) {
+        if (project.shouldUseCommandLine()) {
             commandLineRunProjects();
         }
     }
@@ -138,8 +138,8 @@ public class ChangedProjectsTask {
 
     @SneakyThrows
     private void runCommandLineOnProject(Project affected) {
-        String commandLine = String.format("%s %s", getGradleWrapper(), getPathToTask(affected));
-        getLogger().lifecycle("Running {]", commandLine);
+        String commandLine = String.format("%s %s %s", getGradleWrapper(), getPathToTask(affected), project.getCommandLineArgs());
+        getLogger().lifecycle("Running {}", commandLine);
         LoggingOutputStream stdout = new LoggingOutputStream(project.getLogger()::lifecycle);
         LoggingOutputStream stderr = new LoggingOutputStream(project.getLogger()::error);
         //We use Apache Commons Exec because we do not want to re-invent the wheel as ProcessBuilder hangs if the output or error buffer is full
