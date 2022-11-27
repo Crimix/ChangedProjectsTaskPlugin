@@ -69,6 +69,13 @@ public class Extensions {
                 .map(String.class::cast);
     }
 
+    public static boolean isCommandLine(Project project) {
+        return Optional.of(project)
+                .map(Project::getRootProject)
+                .map(p -> p.findProperty(IS_COMMAND_LINE))
+                .isPresent();
+    }
+
     /**
      * Gets the configured previous commit id
      * @return either an optional with the previous commit id or an empty optional if it has not been configured

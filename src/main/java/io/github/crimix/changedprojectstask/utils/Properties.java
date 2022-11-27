@@ -12,4 +12,5 @@ public class Properties {
     public static final String PREVIOUS_COMMIT = PREFIX + "prevCommit";
     public static final String COMMIT_MODE = PREFIX + "compareMode";
     public static final String TASK_TO_RUN = PREFIX + "taskToRun";
+    public static final String IS_COMMAND_LINE = PREFIX + "isCommandLine";
 }

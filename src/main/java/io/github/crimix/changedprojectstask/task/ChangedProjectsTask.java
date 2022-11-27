@@ -42,15 +42,31 @@ public class ChangedProjectsTask {
 
     public static void configureAndRun(Project project, Task task, ChangedProjectsConfiguration extension) {
         ChangedProjectsTask changedProjectsTask = new ChangedProjectsTask(project, task, extension);
-        if (extension.getCommandLine().getOrElse(false)){
+        if (!project.isCommandLine()){
             changedProjectsTask.configureBeforeEvaluate();
         }
-        project.getGradle().projectsEvaluated(g -> changedProjectsTask.configureAfterAllEvaluate());
+        project.getGradle().projectsEvaluated(g -> changedProjectsTask.afterEvaluate());
+
     }
 
     private void configureBeforeEvaluate() {
         for (Project project : project.getAllprojects()) {
             configureProject(project);
+        }
+    }
+
+    private void afterEvaluate() {
+        configureAfterAllEvaluate();
+        if (project.isCommandLine()) {
+            commandLineRunProjects();
+        }
+    }
+
+    private void commandLineRunProjects() {
+        for (Project project : project.getAllprojects()) {
+            if (shouldProjectRun(project)) {
+                runCommandLineOnProject(project);
+            }
         }
     }
 
@@ -116,25 +132,21 @@ public class ChangedProjectsTask {
 
                 affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
                         .collect(Collectors.toSet());
-
-                if (extension.getCommandLine().getOrElse(false)) {
-                    for (Project affected : affectedProjects) {
-                        runCommandLineOnProject(affected);
-                    }
-                }
             }
         }
     }
 
     @SneakyThrows
     private void runCommandLineOnProject(Project affected) {
+        String commandLine = String.format("%s %s", getGradleWrapper(), getPathToTask(affected));
+        getLogger().lifecycle("Running {]", commandLine);
         LoggingOutputStream stdout = new LoggingOutputStream(project.getLogger()::lifecycle);
         LoggingOutputStream stderr = new LoggingOutputStream(project.getLogger()::error);
         //We use Apache Commons Exec because we do not want to re-invent the wheel as ProcessBuilder hangs if the output or error buffer is full
         DefaultExecutor exec = new DefaultExecutor();
         exec.setStreamHandler(new PumpStreamHandler(stdout, stderr));
         exec.setWorkingDirectory(project.getRootProject().getProjectDir());
-        int exitValue = exec.execute(CommandLine.parse(String.format("%s %s", getGradleWrapper(), getPathToTask(affected))));
+        int exitValue = exec.execute(CommandLine.parse(commandLine));
 
         if (exitValue != 0) {
             throw new IllegalStateException("Executing command failed");

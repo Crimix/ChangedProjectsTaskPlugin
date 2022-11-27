@@ -17,8 +17,6 @@ public interface ChangedProjectsConfiguration {
      */
     Property<Boolean> getDebugLogging();
 
-    Property<Boolean> getCommandLine();
-
     /**
      * The task to run on the changed projects and those affected by the change (If chosen).
      * @return the task name
