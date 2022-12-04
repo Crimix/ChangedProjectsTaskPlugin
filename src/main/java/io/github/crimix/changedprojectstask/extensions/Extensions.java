@@ -45,6 +45,14 @@ public class Extensions {
         return project.getRootProject().hasProperty(ENABLE) || project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
     }
 
+    /**
+     * Returns whether the plugin has been told to run using both task and commandline
+     * @return true if the plugin has been told to run using both task and commandline
+     */
+    public static boolean hasBothRunCommands(Project project) {
+        return project.getRootProject().hasProperty(ENABLE) && project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
+    }
+
 
     /**
      * Gets the task to run, this is either the override from CLI arugment of the default configured task.
