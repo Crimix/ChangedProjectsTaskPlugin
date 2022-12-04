@@ -18,6 +18,9 @@ public class ChangedProjectsPlugin implements Plugin<Project> {
         }
         ChangedProjectsConfiguration extension = project.getExtensions().create("changedProjectsTask", ChangedProjectsConfiguration.class);
         Task task = project.getTasks().register("runTaskForChangedProjects").get();
+        if (project.hasBothRunCommands()) {
+            throw new IllegalArgumentException("You may either use run or runCommandLine, not both");
+        }
         if (project.hasBeenEnabled()) {
             ChangedProjectsTask.configureAndRun(project, task, extension);
         }

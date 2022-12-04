@@ -5,7 +5,12 @@ import io.github.crimix.changedprojectstask.configuration.ChangedProjectsConfigu
 import io.github.crimix.changedprojectstask.extensions.Extensions;
 import io.github.crimix.changedprojectstask.providers.ChangedFilesProvider;
 import io.github.crimix.changedprojectstask.providers.ProjectDependencyProvider;
+import io.github.crimix.changedprojectstask.utils.LoggingOutputStream;
+import lombok.SneakyThrows;
 import lombok.experimental.ExtensionMethod;
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.PumpStreamHandler;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
@@ -37,13 +42,31 @@ public class ChangedProjectsTask {
 
     public static void configureAndRun(Project project, Task task, ChangedProjectsConfiguration extension) {
         ChangedProjectsTask changedProjectsTask = new ChangedProjectsTask(project, task, extension);
-        changedProjectsTask.configureBeforeEvaluate();
-        project.getGradle().projectsEvaluated(g -> changedProjectsTask.configureAfterAllEvaluate());
+        if (!project.shouldUseCommandLine()){
+            changedProjectsTask.configureBeforeEvaluate();
+        }
+        project.getGradle().projectsEvaluated(g -> changedProjectsTask.afterEvaluate());
+
     }
 
     private void configureBeforeEvaluate() {
         for (Project project : project.getAllprojects()) {
             configureProject(project);
+        }
+    }
+
+    private void afterEvaluate() {
+        configureAfterAllEvaluate();
+        if (project.shouldUseCommandLine()) {
+            commandLineRunProjects();
+        }
+    }
+
+    private void commandLineRunProjects() {
+        for (Project project : project.getAllprojects()) {
+            if (shouldProjectRun(project)) {
+                runCommandLineOnProject(project);
+            }
         }
     }
 
@@ -54,9 +77,19 @@ public class ChangedProjectsTask {
             Task otherTask = p.getTasks().findByPath(path);
             if (otherTask != null) {
                 otherTask.onlyIf(t -> shouldProjectRun(p));
+                //configureTaskDependenciesRecursively(otherTask, t -> shouldProjectRun(p));
             }
         });
     }
+
+    /*
+    private void configureTaskDependenciesRecursively(Task task, Spec<? super Task> var1){
+        for(Task dependsOn : task.getTaskDependencies().getDependencies(task)) {
+            dependsOn.onlyIf(var1);
+            configureTaskDependenciesRecursively(dependsOn, var1);
+        }
+    }
+    */
 
     private boolean shouldProjectRun(Project p) {
         return !neverRunProjects.contains(p) && (affectsAll || affectedProjects.contains(p) || alwaysRunProjects.contains(p));
@@ -100,6 +133,33 @@ public class ChangedProjectsTask {
                 affectedProjects = Stream.concat(directlyAffectedProjects.stream(), dependentAffectedProjects.stream())
                         .collect(Collectors.toSet());
             }
+        }
+    }
+
+    @SneakyThrows
+    private void runCommandLineOnProject(Project affected) {
+        String commandLine = String.format("%s %s %s", getGradleWrapper(), getPathToTask(affected), project.getCommandLineArgs());
+        if (extension.shouldLog()) {
+            getLogger().lifecycle("Running {}", commandLine);
+        }
+        LoggingOutputStream stdout = new LoggingOutputStream(project.getLogger()::lifecycle);
+        LoggingOutputStream stderr = new LoggingOutputStream(project.getLogger()::error);
+        //We use Apache Commons Exec because we do not want to re-invent the wheel as ProcessBuilder hangs if the output or error buffer is full
+        DefaultExecutor exec = new DefaultExecutor();
+        exec.setStreamHandler(new PumpStreamHandler(stdout, stderr));
+        exec.setWorkingDirectory(project.getRootProject().getProjectDir());
+        int exitValue = exec.execute(CommandLine.parse(commandLine));
+
+        if (exitValue != 0) {
+            throw new IllegalStateException("Executing command failed");
+        }
+    }
+
+    private String getGradleWrapper() {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            return "gradlew.bat";
+        } else {
+            return "./gradlew";
         }
     }
 

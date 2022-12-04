@@ -40,9 +40,17 @@ As seen above, there are a few different configuration options available
 
 ## Usage
 To use the added `runTaskForChangedProjects` from this plugin you need to run it with a few parameters.
-The minimum required is `-PchangedProjectsTask.run` which enables the plugin to run.
+The minimum required is `-PchangedProjectsTask.run` or `-PchangedProjectsTask.runCommandLine` which enables the plugin to run (See the differance below).  
 Depending on usage, it might also be a good idea to run it with `--continue` such that all dependent tasks are run, instead of fail-fast behaviour.
 Then there are four other optional parameters `-PchangedProjectsTask.taskToRun`, `-PchangedProjectsTask.commit`, `-PchangedProjectsTask.prevCommit` and `-PchangedProjectsTask.compareMode`.
+
+- `-PchangedProjectsTask.run` informs the plugin to do its work, analysing changes files and which module it belongs to. It will then create a `dependsOn` relation between its own task and all modules `taskToRun`.
+To stop the tasks from running it guards it using an `onlyIf`, this `onlyIf` is only put on the `taskToRun` and not other dependices of that task.
+
+
+- `-PchangedProjectsTask.runCommandLine` informs the plugin to do its work, analysing changes files and which module it belongs to. Instead of using `dependsOn`, this one will invoke the `taskToRun` on the default commandline of the system.
+This means it would be just like if you manually called the task for the specific module changed. To supply commandline arguments (including `-D` and `-P` arguments), use  `-PchangedProjectsTask.commandLineArgs`
+
 
 - `-PchangedProjectsTask.taskToRun` lets you configure the task to run on demand. If it is provided it takes priority over the task configured in the above-mentioned table. 
 

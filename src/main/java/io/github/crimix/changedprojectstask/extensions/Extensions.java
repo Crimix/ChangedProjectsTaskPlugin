@@ -42,7 +42,15 @@ public class Extensions {
      * @return true if the plugin's task is allowed to run and configure
      */
     public static boolean hasBeenEnabled(Project project) {
-        return project.getRootProject().hasProperty(ENABLE);
+        return project.getRootProject().hasProperty(ENABLE) || project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
+    }
+
+    /**
+     * Returns whether the plugin has been told to run using both task and commandline
+     * @return true if the plugin has been told to run using both task and commandline
+     */
+    public static boolean hasBothRunCommands(Project project) {
+        return project.getRootProject().hasProperty(ENABLE) && project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
     }
 
 
@@ -67,6 +75,27 @@ public class Extensions {
                 .map(Project::getRootProject)
                 .map(p -> p.findProperty(CURRENT_COMMIT))
                 .map(String.class::cast);
+    }
+
+
+    /**
+     * Returns if the task to runs should be invoked using the commandline instead of using the task onlyIf approach.
+     * @return true if the task should be invoked using the commandline
+     */
+    public static boolean shouldUseCommandLine(Project project) {
+        return project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
+    }
+
+    /**
+     * Gets the commandline arguments specified for use when invoking the task to run using the commandline.
+     * @return the commandline arguments as a string
+     */
+    public static String getCommandLineArgs(Project project) {
+        return Optional.of(project)
+                .map(Project::getRootProject)
+                .map(p -> p.findProperty(COMMANDLINE_ARGS))
+                .map(String.class::cast)
+                .orElse("");
     }
 
     /**
