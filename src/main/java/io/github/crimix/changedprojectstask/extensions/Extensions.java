@@ -70,10 +70,18 @@ public class Extensions {
     }
 
 
+    /**
+     * Returns if the task to runs should be invoked using the commandline instead of using the task onlyIf approach.
+     * @return true if the task should be invoked using the commandline
+     */
     public static boolean shouldUseCommandLine(Project project) {
         return project.getRootProject().hasProperty(ENABLE_COMMANDLINE);
     }
 
+    /**
+     * Gets the commandline arguments specified for use when invoking the task to run using the commandline.
+     * @return the commandline arguments as a string
+     */
     public static String getCommandLineArgs(Project project) {
         return Optional.of(project)
                 .map(Project::getRootProject)

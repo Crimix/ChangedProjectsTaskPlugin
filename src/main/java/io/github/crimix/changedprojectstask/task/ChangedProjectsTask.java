@@ -139,7 +139,9 @@ public class ChangedProjectsTask {
     @SneakyThrows
     private void runCommandLineOnProject(Project affected) {
         String commandLine = String.format("%s %s %s", getGradleWrapper(), getPathToTask(affected), project.getCommandLineArgs());
-        getLogger().lifecycle("Running {}", commandLine);
+        if (extension.shouldLog()) {
+            getLogger().lifecycle("Running {}", commandLine);
+        }
         LoggingOutputStream stdout = new LoggingOutputStream(project.getLogger()::lifecycle);
         LoggingOutputStream stderr = new LoggingOutputStream(project.getLogger()::error);
         //We use Apache Commons Exec because we do not want to re-invent the wheel as ProcessBuilder hangs if the output or error buffer is full
