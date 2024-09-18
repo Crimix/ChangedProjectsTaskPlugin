@@ -137,6 +137,13 @@ To develop and test locally with your own projects there are a few changes neede
  3. Change the plugin version used in your project to be `x.y-SNAPSHOT`
  4. Do a refresh / sync of Gradle
 
+## Local debugging
+To debug the plugin on your project, first checkout the repo and set breakpoints.
+Then you start the project task as the following in your project
+`./gradlew runTaskForChangedProjects -PchangedProjectsTask.run -Dorg.gradle.debug=true --no-daemon`
+
+Then the Gradle task will wait for you to connect a debugger, this can be done using the `GradleRemoteDebug` run configuration from this repo.
+
 ## FAQ
 ### Dependent task execution stops on first failed
 Normally Gradle uses a fail-fast approach except for the test task. This means that if a dependent task fails the build stops.
@@ -150,6 +157,9 @@ The way to get the wanted behaviour is to run the task as the following
 This caused Gradle to execute all tasks even if the fail and still report the build as failed when it is done.
 This way it is possible to run all dependent tasks and get all unit test results to present to the user. 
 
+### Task '.run' not found in root project
+If you encounter any issue running the commands with the `-PchangedProjectsTask.run` parameter, it might be because you are using 
+PowerShell on Windows which needs double quotes around such parameters.
 
 ## Why did I make this
 I have for at least a month been looking for a plugin or way to do this in Gradle.

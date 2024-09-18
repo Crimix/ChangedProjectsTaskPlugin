@@ -52,7 +52,7 @@ public class ChangedFilesProvider {
         exec.execute(CommandLine.parse(gitCommandProvider.getGitDiffCommand()));
 
         if (stderr.isNotEmpty()) {
-            throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stdout));
+            throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stderr));
         }
 
         if (stdout.isEmpty()) {
