@@ -52,7 +52,13 @@ public class ChangedFilesProvider {
         exec.execute(CommandLine.parse(gitCommandProvider.getGitDiffCommand()));
 
         if (stderr.isNotEmpty()) {
-            throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stderr));
+            if (containsErrors(stderr)) {
+                throw new IllegalStateException(String.format("Failed to run git diff because of \n%s", stderr));
+            } else {
+                if (project.getLogger().isWarnEnabled()) {
+                    project.getLogger().warn(stderr.toString());
+                }
+            }
         }
 
         if (stdout.isEmpty()) {
@@ -71,6 +77,10 @@ public class ChangedFilesProvider {
         return stdout.getLines().stream()
                 .filter(Predicate.not(filter))
                 .collect(Collectors.toList());
+    }
+
+    private boolean containsErrors(CollectingOutputStream stderr) {
+        return stderr.getLines().stream().anyMatch(line -> line.startsWith("error:"));
     }
 
     private boolean initAffectsAllProjects(List<String> gitFilteredChanges) {
